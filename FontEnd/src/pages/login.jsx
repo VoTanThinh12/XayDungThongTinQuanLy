@@ -1,7 +1,9 @@
+import { useNavigate } from "react-router-dom"
 import { useState } from "react"
 import { Eye, EyeOff, Store, ShoppingCart } from "lucide-react"
 
 export default function LoginPage() {
+  const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -15,6 +17,7 @@ export default function LoginPage() {
       setIsLoading(false)
       console.log("Login attempt:", { email, password, rememberMe })
       alert("Đăng nhập thành công!")
+      navigate("/home")
     }, 2000)
   }
 
@@ -73,8 +76,6 @@ export default function LoginPage() {
                   </button>
                 </div>
               </div>
-
-              {/* Remember Me and Forgot Password */}
               <div className="flex flex-col sm:flex-row items-center justify-between pt-2 gap-2 sm:gap-0">
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   <input
