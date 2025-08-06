@@ -31,24 +31,17 @@ export default function EmployeeDashboard() {
   }, [])
 
   const todayTasks = [
-    { id: 1, title: "Hoàn thành báo cáo tuần", priority: "high", completed: false, deadline: "17:00" },
-    { id: 2, title: "Họp team dự án ABC", priority: "medium", completed: true, deadline: "14:00" },
-    { id: 3, title: "Review code module thanh toán", priority: "high", completed: false, deadline: "16:30" },
-    { id: 4, title: "Cập nhật tài liệu API", priority: "low", completed: false, deadline: "18:00" },
+    { id: 1, title: "Báo cáo vào ca", priority: "high", completed: true, deadline: "09:00" },
+    { id: 2, title: "Fill đồ lên kệ", priority: "high", completed: true, deadline: "10:00" },
+    { id: 3, title: "Vệ sinh trong ca", priority: "high", completed: false, deadline: "09:00 - 14:00" },
+    { id: 4, title: "Đếm tiền", priority: "high", completed: false, deadline: "14:00" },
   ]
 
   const recentNotifications = [
-    { title: "Lịch họp team đã được cập nhật", time: "10 phút trước", type: "info" },
-    { title: "Bạn có 1 yêu cầu nghỉ phép chờ duyệt", time: "1 giờ trước", type: "warning" },
-    { title: "Chúc mừng! Bạn đã hoàn thành mục tiêu tháng", time: "2 giờ trước", type: "success" },
-    { title: "Nhắc nhở: Nộp timesheet cuối tuần", time: "1 ngày trước", type: "reminder" },
-  ]
-
-  const upcomingSchedule = [
-    { title: "Daily Standup", time: "09:00 - 09:30", date: "Hôm nay", type: "meeting" },
-    { title: "Code Review Session", time: "15:00 - 16:00", date: "Hôm nay", type: "work" },
-    { title: "Team Building", time: "14:00 - 17:00", date: "Thứ 6", type: "event" },
-    { title: "Training React Native", time: "09:00 - 12:00", date: "Thứ 2", type: "training" },
+    { title: "...", time: "...", type: "info" },
+    { title: "...", time: "...", type: "warning" },
+    { title: "...", time: "...", type: "success" },
+    { title: "...", time: "...", type: "reminder" },
   ]
 
   return (
@@ -84,33 +77,29 @@ export default function EmployeeDashboard() {
           <div className="bg-gradient-to-br from-blue-600 to-blue-800 text-white p-6 rounded-lg shadow">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm m-0">Giờ làm hôm nay</h3>
-              <span className="text-xl">🕐</span>
             </div>
             <div className="text-3xl font-bold mb-1">7h 30p</div>
             <p className="text-xs opacity-80 m-0">Vào lúc: 08:30</p>
           </div>
           <div className="bg-gradient-to-br from-green-500 to-green-700 text-white p-6 rounded-lg shadow">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="text-sm m-0">Nhiệm vụ hoàn thành</h3>
-              <span className="text-xl">✅</span>
+              <h3 className="text-sm m-0">Số đơn hàng đã bán</h3>
             </div>
-            <div className="text-3xl font-bold mb-1">12/15</div>
+            <div className="text-3xl font-bold mb-1">12</div>
             <p className="text-xs opacity-80 m-0">Tuần này</p>
           </div>
           <div className="bg-gradient-to-br from-purple-500 to-purple-700 text-white p-6 rounded-lg shadow">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="text-sm m-0">Ngày nghỉ còn lại</h3>
-              <span className="text-xl">☕</span>
+              <h3 className="text-sm m-0">Tổng doanh thu ca làm</h3>
             </div>
-            <div className="text-3xl font-bold mb-1">8 ngày</div>
-            <p className="text-xs opacity-80 m-0">Năm 2024</p>
+            <div className="text-3xl font-bold mb-1">10,000,000</div>
+            <p className="text-xs opacity-80 m-0">Ngày 6 tháng 8 năm 2025</p>
           </div>
           <div className="bg-gradient-to-br from-yellow-500 to-yellow-700 text-white p-6 rounded-lg shadow">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="text-sm m-0">Điểm hiệu suất</h3>
-              <span className="text-xl">📈</span>
+              <h3 className="text-sm m-0">Số ngày đi làm trong tháng</h3>
             </div>
-            <div className="text-3xl font-bold mb-1">92/100</div>
+            <div className="text-3xl font-bold mb-1">6/31</div>
             <p className="text-xs opacity-80 m-0">Tháng này</p>
           </div>
         </div>
@@ -144,7 +133,7 @@ export default function EmployeeDashboard() {
           {/* Today's Tasks */}
           <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2 m-0">✅ Nhiệm vụ hôm nay</h2>
+              <h2 className="text-lg font-semibold flex items-center gap-2 m-0">✅ Nhiệm vụ của ca</h2>
               <p className="text-sm text-gray-500 m-0">4 nhiệm vụ cần hoàn thành</p>
             </div>
             <div className="mb-4">
@@ -194,9 +183,9 @@ export default function EmployeeDashboard() {
               </div>
               <div>
                 <h3 className="font-semibold mb-1">Nguyễn Văn An</h3>
-                <p className="text-sm text-gray-500 mb-2">Frontend Developer</p>
+                <p className="text-sm text-gray-500 mb-2">Nhân Viên Bán Hàng</p>
                 <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700 border border-gray-300">
-                  💼 IT Department
+                  💼 Full Time
                 </span>
               </div>
             </div>
@@ -209,23 +198,16 @@ export default function EmployeeDashboard() {
                 <span>📱</span>
                 <span className="text-sm text-gray-700">0123 456 789</span>
               </div>
-              <div className="flex items-center gap-2 text-gray-400">
-                <span>📍</span>
-                <span className="text-sm text-gray-700">Tầng 5, Tòa nhà ABC</span>
-              </div>
             </div>
             <button className="w-full py-2 bg-white text-gray-700 border border-gray-300 rounded cursor-pointer">
               Cập nhật thông tin
             </button>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Notifications */}
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2 m-0">🔔 Thông báo mới</h2>
-              <p className="text-sm text-gray-500 m-0">Cập nhật và thông tin quan trọng</p>
+        <div className="mb-8">
+          <div className="bg-white p-6 rounded-lg shadow border border-gray-200 w-full">
+            <div className="mb-4 text-center">
+              <h2 className="text-lg font-semibold flex items-center gap-2 m-0 justify-center">Đơn hàng đã bán được</h2>
             </div>
             <div className="mb-4">
               {recentNotifications.map((notification, index) => (
@@ -252,44 +234,7 @@ export default function EmployeeDashboard() {
               ))}
             </div>
             <button className="w-full py-2 bg-white text-gray-700 border border-gray-300 rounded cursor-pointer">
-              Xem tất cả thông báo
-            </button>
-          </div>
-
-          {/* Upcoming Schedule */}
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2 m-0">📅 Lịch trình sắp tới</h2>
-              <p className="text-sm text-gray-500 m-0">Cuộc họp và sự kiện trong tuần</p>
-            </div>
-            <div className="mb-4">
-              {upcomingSchedule.map((event, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 p-3 rounded-lg mb-2 cursor-pointer"
-                >
-                  <div
-                    className={`w-3 h-3 rounded-full ${
-                      event.type === "meeting"
-                        ? "bg-blue-500"
-                        : event.type === "work"
-                        ? "bg-green-500"
-                        : event.type === "event"
-                        ? "bg-purple-500"
-                        : "bg-yellow-500"
-                    }`}
-                  />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium mb-1">{event.title}</p>
-                    <p className="text-xs text-gray-500 m-0">
-                      {event.date} • {event.time}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button className="w-full py-2 bg-white text-gray-700 border border-gray-300 rounded cursor-pointer">
-              Xem lịch đầy đủ
+              Xem tất cả đơn hàng đã bán
             </button>
           </div>
         </div>
