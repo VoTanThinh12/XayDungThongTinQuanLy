@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ NHÂN VIÊN THU NGÂN ============
+model nhan_vien {
+  id                  Int      @id @default(autoincrement())
+  ho_ten             String   @db.VarChar(100)
+  tai_khoan          String   @unique @db.VarChar(50)
+  mat_khau           String   @db.VarChar(255)
+  vai_tro            VaiTro
+  ca_lam_viec        String?  @db.VarChar(20)
+  so_dien_thoai      String?  @db.VarChar(15)
+  trang_thai         Boolean  @default(true)
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  // Relations
+  hoa_don_ban        hoa_don_ban[]
+  ca_lam_viec_logs   ca_lam_viec[]
+
+  @@index([tai_khoan])
+  @@index([vai_tro])
+  @@map("nhan_vien")
+}
+
+enum VaiTro {
+  thu_ngan
+}
+
+// ============ CA LÀM VIỆC ============
+model ca_lam_viec {
+  id                 Int       @id @default(autoincrement())
+  id_nhan_vien       Int
+  thoi_gian_bat_dau  DateTime  @default(now())
+  thoi_gian_ket_thuc DateTime?
+  so_don_ban         Int       @default(0)
+  doanh_thu          Decimal   @default(0) @db.Decimal(12, 2)
+  ghi_chu           String?   @db.Text
+  trang_thai        TrangThaiCa @default(DANG_LAM)
+  
+  // Relations
+  nhan_vien         nhan_vien @relation(fields: [id_nhan_vien], references: [id])
+  
+  @@index([id_nhan_vien])
+  @@index([thoi_gian_bat_dau])
+  @@map("ca_lam_viec")
+}
+
+enum TrangThaiCa {
+  DANG_LAM
+  DA_KET_THUC
+}
+
+// ============ DANH MỤC SẢN PHẨM (Tạo sẵn) ============
+model danh_muc {
+  id           Int      @id @default(autoincrement())
+  ten_danh_muc String   @db.VarChar(100)
+  mo_ta        String?  @db.Text
+  trang_thai   Boolean  @default(true)
+  created_at   DateTime @default(now())
+
+  // Relations
+  san_pham     san_pham[]
+
+  @@map("danh_muc")
+}
+
+// ============ SẢN PHẨM (Tạo sẵn) ============
+model san_pham {
+  id                    Int      @id @default(autoincrement())
+  ma_san_pham          String   @unique @db.VarChar(50)
+  ten_san_pham         String   @db.VarChar(200)
+  ma_vach              String   @unique @db.VarChar(50)
+  id_danh_muc          Int?
+  gia_ban              Decimal  @db.Decimal(10, 2)
+  so_luong             Int      @default(0)
+  don_vi_tinh          String   @default("Cái") @db.VarChar(20)
+  mo_ta                String?  @db.Text
+  trang_thai           Boolean  @default(true)
+  la_san_pham_noi_bat  Boolean  @default(false)
+  created_at           DateTime @default(now())
+
+  // Relations
+  danh_muc             danh_muc? @relation(fields: [id_danh_muc], references: [id])
+  chi_tiet_hoa_don_ban chi_tiet_hoa_don_ban[]
+
+  @@index([ma_vach])
+  @@index([ma_san_pham])
+  @@index([trang_thai])
+  @@map("san_pham")
+}
+
+// ============ HÓA ĐƠN BÁN ============
+model hoa_don_ban {
+  id                   Int      @id @default(autoincrement())
+  ma_hoa_don           String   @unique @db.VarChar(50)
+  id_nhan_vien         Int
+  ngay_tao            DateTime @default(now())
+  tong_tien           Decimal  @db.Decimal(10, 2)
+  tien_khach_dua      Decimal  @db.Decimal(10, 2)
+  tien_thoi           Decimal  @db.Decimal(10, 2)
+  phuong_thuc_tt      PhuongThucThanhToan @default(TIEN_MAT)
+  ghi_chu             String?  @db.Text
+  trang_thai          TrangThaiHoaDon @default(HOAN_THANH)
+  ly_do_huy           String?  @db.Text
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  // Relations
+  nhan_vien           nhan_vien @relation(fields: [id_nhan_vien], references: [id])
+  chi_tiet_hoa_don_ban chi_tiet_hoa_don_ban[]
+
+  @@index([ma_hoa_don])
+  @@index([id_nhan_vien])
+  @@index([ngay_tao])
+  @@map("hoa_don_ban")
+}
+
+enum PhuongThucThanhToan {
+  TIEN_MAT
+  THE_NGAN_HANG
+  CHUYEN_KHOAN
+}
+
+enum TrangThaiHoaDon {
+  HOAN_THANH
+  DA_HUY
+}
+
+model chi_tiet_hoa_don_ban {
+  id           Int      @id @default(autoincrement())
+  id_hoa_don   Int
+  id_san_pham  Int
+  so_luong     Int
+  gia_ban      Decimal  @db.Decimal(10, 2)
+  thanh_tien   Decimal  @db.Decimal(10, 2)
+
+  // Relations
+  hoa_don      hoa_don_ban @relation(fields: [id_hoa_don], references: [id])
+  san_pham     san_pham @relation(fields: [id_san_pham], references: [id])
+
+  @@map("chi_tiet_hoa_don_ban")
+}
