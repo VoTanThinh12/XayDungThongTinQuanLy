@@ -60,22 +60,24 @@ model nha_cung_cap {
   phieu_nhap       phieu_nhap[]
 }
 
-
-
 model nhan_vien {
-  id          Int                @id @default(autoincrement())
-  ho_ten      String             @db.VarChar(100)
-  tai_khoan   String             @unique @db.VarChar(50)
-  mat_khau    String             @db.VarChar(100)
-  vai_tro     nhan_vien_vai_tro  @default(quan_ly)
-  trang_thai  Boolean            @default(true)
-  so_dien_thoai   String?             @db.VarChar(15)
-  dia_chi         String?             @db.Text   
-  email           String?             @unique   
-  ngay_sinh       DateTime?           @db.Date  
-  ngay_vao_lam    DateTime?           @db.Date   
+  id            Int               @id @default(autoincrement())
+  ho_ten        String            @db.VarChar(100)
+  tai_khoan     String            @unique @db.VarChar(50)
+  mat_khau      String            @db.VarChar(100)
+  vai_tro       nhan_vien_vai_tro @default(quan_ly)
+  trang_thai    Boolean           @default(true)
+  so_dien_thoai String?           @db.VarChar(15)
+  dia_chi       String?           @db.Text
+  email         String?           @unique
+  ngay_sinh     DateTime?         @db.Date
+  ngay_vao_lam  DateTime?         @db.Date
+
   hoa_don_ban hoa_don_ban[]
   phieu_nhap  phieu_nhap[]
+
+  // 👇 THÊM QUAN HỆ NGƯỢC TỚI ca_lam ĐỂ FIX P1012
+  ca_lams ca_lam[] @relation("NhanVien_CaLam")
 
   @@index([tai_khoan], map: "tai_khoan")
   @@map("nhan_vien")
@@ -104,6 +106,18 @@ model san_pham {
   ngay_tao             DateTime?              @default(now()) @db.DateTime(0)
   chi_tiet_hoa_don_ban chi_tiet_hoa_don_ban[]
   chi_tiet_phieu_nhap  chi_tiet_phieu_nhap[]
+}
+
+// 👇 THÊM MODEL ca_lam CHO QUẢN LÝ CA
+model ca_lam {
+  id           Int       @id @default(autoincrement())
+  id_nhan_vien Int
+  nhan_vien    nhan_vien @relation("NhanVien_CaLam", fields: [id_nhan_vien], references: [id])
+
+  start_time    DateTime  @default(now())
+  end_time      DateTime?
+  total_orders  Int       @default(0)
+  total_revenue Decimal   @default(0) @db.Decimal(12, 2)
 }
 
 enum nhan_vien_vai_tro {

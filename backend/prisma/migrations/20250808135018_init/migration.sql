@@ -102,6 +102,17 @@ CREATE TABLE `san_pham` (
     UNIQUE INDEX `ma_san_pham`(`ma_san_pham`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS ca_lam (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  id_nhan_vien INT NOT NULL,
+  start_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+  end_time DATETIME NULL,
+  total_orders INT DEFAULT 0,
+  total_revenue DECIMAL(12,2) DEFAULT 0,
+  FOREIGN KEY (id_nhan_vien) REFERENCES nhan_vien(id)
+);
+
+
 
 -- AddForeignKey
 ALTER TABLE `chi_tiet_hoa_don_ban` ADD CONSTRAINT `chi_tiet_hoa_don_ban_ibfk_1` FOREIGN KEY (`id_hoa_don`) REFERENCES `hoa_don_ban`(`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;

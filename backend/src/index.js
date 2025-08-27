@@ -1,42 +1,49 @@
-const express = require('express');
+const express = require("express");
 const app = express();
-const cors = require('cors');
+const cors = require("cors");
 
-const nhanvienRoutes = require('./routes/nhanvien.routes.js');
-const sanPhamRoutes = require('./routes/sanpham.routes.js');
-const phieuNhapRoutes = require('./routes/phieunhap.routes.js');
-const authRoutes = require('./routes/auth.routes.js');
-const baocaoRoutes = require('./routes/baocao.routes.js');
-const hoadonbanRoutes = require('./routes/hoadonban.routes.js');
-const userRoutes = require('./routes/user.routes.js');
-const dashboardRoutes = require('./routes/dashboard.routes.js'); 
+const nhanvienRoutes = require("./routes/nhanvien.routes.js");
+const sanPhamRoutes = require("./routes/sanpham.routes.js");
+const phieuNhapRoutes = require("./routes/phieunhap.routes.js");
+const authRoutes = require("./routes/auth.routes.js");
+const baocaoRoutes = require("./routes/baocao.routes.js");
+const hoadonbanRoutes = require("./routes/hoadonban.routes.js");
+const userRoutes = require("./routes/user.routes.js");
+const dashboardRoutes = require("./routes/dashboard.routes.js");
+const posRoutes = require("./routes/pos.routes.js");
 
 app.use(cors());
 app.use(express.json());
 
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   res.json({
-    message: 'Chào mừng đến với API quản lý cửa hàng tiện lợi!',
+    message: "Chào mừng đến với API quản lý cửa hàng tiện lợi!",
     endpoints: [
-      { path: '/api/nhanvien', methods: ['GET', 'POST', 'PUT', 'DELETE'] },
-      { path: '/api/sanpham', methods: ['GET', 'POST', 'PUT', 'DELETE'] },
-      { path: '/api/phieunhap/tao', methods: ['POST'] },
-      { path: '/api/auth/login', methods: ['POST'] },
-      { path: '/api/auth/register', methods: ['POST'] },
-      { path: '/api/dashboard/summary', methods: ['GET'] }, // ✅ hiển thị API mới
+      { path: "/api/nhanvien", methods: ["GET", "POST", "PUT", "DELETE"] },
+      { path: "/api/sanpham", methods: ["GET", "POST", "PUT", "DELETE"] },
+      { path: "/api/phieunhap/tao", methods: ["POST"] },
+      { path: "/api/auth/login", methods: ["POST"] },
+      { path: "/api/auth/register", methods: ["POST"] },
+      { path: "/api/dashboard/summary", methods: ["GET"] }, // ✅ hiển thị API mới
+      { path: "/api/hoadonban/tao", methods: ["POST"] },
+      { path: "/api/hoadonban/cua-toi?date=YYYY-MM-DD", methods: ["GET"] },
+      { path: "/api/hoadonban/:id/receipt", methods: ["GET"] },
+      { path: "/api/pos/shifts/start", methods: ["POST"] },
+      { path: "/api/pos/shifts/end", methods: ["POST"] },
     ],
   });
 });
 
-app.use('/api/nhanvien', nhanvienRoutes);
-app.use('/api/sanpham', sanPhamRoutes);
-app.use('/api/phieunhap', phieuNhapRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/baocao', baocaoRoutes);
-app.use('/api/hoadonban', hoadonbanRoutes);
-app.use('/api/user', userRoutes);
-app.use('/api/dashboard', dashboardRoutes); 
+app.use("/api/nhanvien", nhanvienRoutes);
+app.use("/api/sanpham", sanPhamRoutes);
+app.use("/api/phieunhap", phieuNhapRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/baocao", baocaoRoutes);
+app.use("/api/hoadonban", hoadonbanRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/pos", posRoutes); // ✅ mount POS
 
 app.listen(3001, () => {
-  console.log('Server chạy tại http://localhost:3001');
+  console.log("Server chạy tại http://localhost:3001");
 });
