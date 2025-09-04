@@ -46,6 +46,8 @@ model hoa_don_ban {
   id_nhan_vien         Int?
   ngay_ban             DateTime?              @default(now()) @db.DateTime(0)
   tong_tien            Decimal?               @db.Decimal(10, 2)
+  tien_khach_dua       Decimal?               @default(0.00) @db.Decimal(15, 2)
+  tien_thoi            Decimal?               @db.Decimal(10, 0)
   chi_tiet_hoa_don_ban chi_tiet_hoa_don_ban[]
   nhan_vien            nhan_vien?             @relation(fields: [id_nhan_vien], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "hoa_don_ban_ibfk_1")
 
@@ -72,12 +74,9 @@ model nhan_vien {
   email         String?           @unique
   ngay_sinh     DateTime?         @db.Date
   ngay_vao_lam  DateTime?         @db.Date
-
-  hoa_don_ban hoa_don_ban[]
-  phieu_nhap  phieu_nhap[]
-
-  // 👇 THÊM QUAN HỆ NGƯỢC TỚI ca_lam ĐỂ FIX P1012
-  ca_lams ca_lam[] @relation("NhanVien_CaLam")
+  ca_lams       ca_lam[]          @relation("NhanVien_CaLam")
+  hoa_don_ban   hoa_don_ban[]
+  phieu_nhap    phieu_nhap[]
 
   @@index([tai_khoan], map: "tai_khoan")
   @@map("nhan_vien")
@@ -108,25 +107,20 @@ model san_pham {
   chi_tiet_phieu_nhap  chi_tiet_phieu_nhap[]
 }
 
-// 👇 THÊM MODEL ca_lam CHO QUẢN LÝ CA
 model ca_lam {
-  id           Int       @id @default(autoincrement())
-  id_nhan_vien Int
-  nhan_vien    nhan_vien @relation("NhanVien_CaLam", fields: [id_nhan_vien], references: [id])
+  id            Int       @id @default(autoincrement())
+  id_nhan_vien  Int
+  start_time    DateTime? @default(now()) @db.DateTime(0)
+  end_time      DateTime? @db.DateTime(0)
+  total_orders  Int?      @default(0)
+  total_revenue Decimal?  @default(0.00) @db.Decimal(12, 2)
+  nhan_vien     nhan_vien @relation("NhanVien_CaLam", fields: [id_nhan_vien], references: [id], onUpdate: Restrict, map: "ca_lam_ibfk_1")
 
-  start_time    DateTime  @default(now())
-  end_time      DateTime?
-  total_orders  Int       @default(0)
-  total_revenue Decimal   @default(0) @db.Decimal(12, 2)
+  @@index([id_nhan_vien], map: "id_nhan_vien")
 }
 
 enum nhan_vien_vai_tro {
   quan_ly
   thu_ngan
   nhan_vien_kho
-}
-
-enum nhanvien_trangThai {
-  ang_l_m @map("Đang làm")
-  ngh_    @map("Đã nghỉ")
 }

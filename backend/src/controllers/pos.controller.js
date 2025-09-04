@@ -23,12 +23,15 @@ export const createOrder = async (req, res) => {
       }
       tong_tien += sp.gia_ban * item.so_luong;
     }
-
+    const tienKhachDua = Number(tien_khach_dua) || 0;
+    const tienThoi = Math.max(0, tienKhachDua - tong_tien);
     // Tạo hóa đơn + chi tiết
     const hoaDon = await prisma.hoa_don_ban.create({
       data: {
         id_nhan_vien,
         tong_tien,
+        tien_khach_dua: tienKhachDua, // LƯU VÀO DB
+        tien_thoi: tienThoi, // LƯU VÀO DB
         chi_tiet: {
           create: items.map((item) => ({
             id_san_pham: item.id_san_pham,

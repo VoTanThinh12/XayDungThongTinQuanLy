@@ -9,395 +9,1615 @@ import {
   Space,
   Modal,
   Typography,
+  Badge,
+  Divider,
+  Radio,
+  Steps,
+  QRCode,
 } from "antd";
-import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import {
+  LogoutOutlined,
+  UserOutlined,
+  SearchOutlined,
+  ShoppingCartOutlined,
+  DollarOutlined,
+  PlusOutlined,
+  MinusOutlined,
+  DeleteOutlined,
+  CheckCircleOutlined,
+  FileTextOutlined,
+  CreditCardOutlined,
+  QrcodeOutlined,
+  ScheduleOutlined,
+  BankOutlined,
+} from "@ant-design/icons";
+
 import api from "../utils/api";
+import { useNavigate } from "react-router-dom";
 
+// helper from antd Typography
 const { Text } = Typography;
-const plusSteps = [10000, 20000, 50000, 100000, 200000, 500000];
-const minusSteps = [-10000, -20000, -50000, -100000, -200000, -500000];
-
-// chuẩn hoá chuỗi để tìm kiếm không dấu
-const norm = (s) =>
-  (s || "")
-    .toString()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
 
 const Pos = () => {
-  const [q, setQ] = useState("");
-  const [products, setProducts] = useState([]);
-  const [cart, setCart] = useState([]);
-  const [cash, setCash] = useState(0);
-  const [successModal, setSuccessModal] = useState({
-    open: false,
-    invoice: null,
-    cash: 0,
-    change: 0,
-  });
-
   const navigate = useNavigate();
-  const hoTen =
-    localStorage.getItem("ho_ten") ||
-    localStorage.getItem("tai_khoan") ||
-    "Nhân viên";
+  const [tuKhoa, setTuKhoa] = useState("");
+  const [danhSachSanPham, setDanhSachSanPham] = useState([]);
+  const [gioHang, setGioHang] = useState([]);
+  const [tienMat, setTienMat] = useState(0);
+  const [modalThanhCong, setModalThanhCong] = useState({
+    open: false,
+    hoaDon: null,
+    tienMat: 0,
+    tienThoi: 0,
+  });
+  const [modalThanhToan, setModalThanhToan] = useState({
+    open: false,
+    phuongThuc: "cash",
+  });
+  const [keHoachTraGop, setKeHoachTraGop] = useState({
+    soThang: 6,
+    tienHangThang: 0,
+  });
+  const [loiThanhToan, setLoiThanhToan] = useState("");
 
-  // Lấy toàn bộ sản phẩm một lần (không phân trang)
+  const hoTen = localStorage.getItem("hoTen") || "Nhân viên";
+
+  const cacBuocCong = [10000, 20000, 50000, 100000];
+  const cacBuocTru = [-10000, -20000, -50000];
+
+  const chuanHoa = (s = "") =>
+    String(s)
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .replace(/[^a-z0-9 ]/g, "");
+
   useEffect(() => {
     (async () => {
       try {
         const res = await api.get("/sanpham");
-        setProducts(res.data || []);
-      } catch {
+        setDanhSachSanPham(res.data || []);
+      } catch (e) {
         message.error("Không tải được danh sách sản phẩm");
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Lọc theo từ khóa (có hỗ trợ không dấu)
-  const filtered = useMemo(() => {
-    const key = norm(q.trim());
-    if (!key) return products;
-    return products.filter(
-      (p) =>
-        norm(p.ten_san_pham).includes(key) || norm(p.ma_san_pham).includes(key)
+  const danhSachDaLoc = useMemo(() => {
+    const khoa = chuanHoa(tuKhoa.trim());
+    if (!khoa) return danhSachSanPham;
+    return danhSachSanPham.filter(
+      (sp) =>
+        chuanHoa(sp.ten_san_pham).includes(khoa) ||
+        chuanHoa(sp.ma_san_pham).includes(khoa)
     );
-  }, [q, products]);
+  }, [tuKhoa, danhSachSanPham]);
 
-  const addToCart = (sp) => {
-    setCart((prev) => {
-      const exist = prev.find((x) => x.id === sp.id);
-      if (exist)
-        return prev.map((x) =>
-          x.id === sp.id ? { ...x, so_luong: x.so_luong + 1 } : x
+  const themVaoGio = (sanPham) => {
+    setGioHang((truoc) => {
+      const daTonTai = truoc.find((x) => x.id === sanPham.id);
+      if (daTonTai)
+        return truoc.map((x) =>
+          x.id === sanPham.id ? { ...x, so_luong: x.so_luong + 1 } : x
         );
       return [
-        ...prev,
+        ...truoc,
         {
-          id: sp.id,
-          ten: sp.ten_san_pham,
-          don_gia: Number(sp.gia_ban),
+          id: sanPham.id,
+          ten: sanPham.ten_san_pham,
+          don_gia: Number(sanPham.gia_ban),
           so_luong: 1,
         },
       ];
     });
   };
-  const updateQty = (id, qty) =>
-    setCart((prev) =>
-      prev.map((x) => (x.id === id ? { ...x, so_luong: qty || 1 } : x))
+  const capNhatSoLuong = (id, soLuong) =>
+    setGioHang((truoc) =>
+      truoc.map((x) => (x.id === id ? { ...x, so_luong: soLuong || 1 } : x))
     );
-  const removeItem = (id) => setCart((prev) => prev.filter((x) => x.id !== id));
-  const total = useMemo(
-    () => cart.reduce((s, x) => s + x.don_gia * x.so_luong, 0),
-    [cart]
+  const xoaKhoiGio = (id) =>
+    setGioHang((truoc) => truoc.filter((x) => x.id !== id));
+  const tongTien = useMemo(
+    () => gioHang.reduce((tong, x) => tong + x.don_gia * x.so_luong, 0),
+    [gioHang]
   );
-  const change = useMemo(
-    () => Math.max(0, Number(cash) - total),
-    [cash, total]
+  const tienThoi = useMemo(
+    () => Math.max(0, Number(tienMat) - tongTien),
+    [tienMat, tongTien]
   );
-  const addMoney = (m) => setCash((prev) => Math.max(0, Number(prev || 0) + m));
+  const themTien = (soTien) => {
+    const tienMoi = Math.max(0, Number(tienMat || 0) + soTien);
+    setTienMat(tienMoi);
 
-  const checkout = async () => {
-    if (!cart.length) return message.warning("Chưa có hàng trong giỏ");
+    // Xóa lỗi nếu đã đủ tiền
+    if (tienMoi >= tongTien) {
+      setLoiThanhToan("");
+    }
+  };
+
+  // Tính toán trả góp
+  const tinhTraGop = (soThang) => {
+    const tienHangThang = Math.ceil(tongTien / soThang);
+    setKeHoachTraGop({ soThang, tienHangThang });
+  };
+
+  // const xuLyThanhToan = async () => {
+  //   if (!gioHang.length) return message.warning("Chưa có hàng trong giỏ");
+
+  //   // Mở modal chọn phương thức thanh toán
+  //   setModalThanhToan({ open: true, phuongThuc: "cash" });
+  // };
+  // Thay thế hàm xuLyThanhToan hiện tại
+  const xuLyThanhToan = async () => {
+    if (!gioHang.length) return message.warning("Chưa có hàng trong giỏ");
+
+    // Mở modal trước
+    setModalThanhToan({ open: true, phuongThuc: "cash" });
+
+    // Kiểm tra ngay lập tức nếu thanh toán tiền mặt và không đủ tiền
+    if (Number(tienMat) < tongTien) {
+      const thieuTien = tongTien - Number(tienMat);
+      setLoiThanhToan(
+        `Tiền khách đưa không đủ! Cần thêm ${new Intl.NumberFormat(
+          "vi-VN"
+        ).format(thieuTien)}₫`
+      );
+    } else {
+      // Reset lỗi nếu đủ tiền
+      setLoiThanhToan("");
+    }
+  };
+
+  // const thucHienThanhToan = async () => {
+  //   try {
+  //     const nvId = localStorage.getItem("nvId");
+  //     const duLieuThanhToan = {
+  //       id_nhan_vien: Number(nvId) || 0,
+  //       danhSachSanPham: gioHang.map((x) => ({
+  //         id_san_pham: x.id,
+  //         so_luong: x.so_luong,
+  //         don_gia: x.don_gia,
+  //       })),
+  //     };
+
+  //     const res = await api.post("/hoadonban/tao", duLieuThanhToan);
+  //     const hoaDon = res.data;
+
+  //     // Đóng modal thanh toán
+  //     setModalThanhToan({ open: false, phuongThuc: "cash" });
+
+  //     // Hiện hóa đơn thành công
+  //     setModalThanhCong({
+  //       open: true,
+  //       hoaDon: {
+  //         ...hoaDon,
+  //         phuong_thuc_thanh_toan: modalThanhToan.phuongThuc,
+  //       },
+  //       tienMat:
+  //         modalThanhToan.phuongThuc === "cash" ? Number(tienMat) : tongTien,
+  //       tienThoi: modalThanhToan.phuongThuc === "cash" ? Number(tienThoi) : 0,
+  //     });
+
+  //     // Reset giỏ
+  //     setGioHang([]);
+  //     setTienMat(0);
+  //   } catch (e) {
+  //     message.error(e.response?.data?.error || "Tạo hoá đơn thất bại");
+  //   }
+  // };
+  // Thay thế hàm thucHienThanhToan hiện tại
+  const thucHienThanhToan = async () => {
+    // Kiểm tra nếu thanh toán tiền mặt và tiền khách đưa không đủ
+    if (modalThanhToan.phuongThuc === "cash" && Number(tienMat) < tongTien) {
+      const thieuTien = tongTien - Number(tienMat);
+      setLoiThanhToan(
+        `Tiền khách đưa không đủ! Cần thêm ${new Intl.NumberFormat(
+          "vi-VN"
+        ).format(thieuTien)}₫`
+      );
+      return;
+    }
+
+    // Xóa lỗi nếu validation passed
+    setLoiThanhToan("");
+
     try {
       const nvId = localStorage.getItem("nvId");
-      const body = {
-        id_nhan_vien: Number(nvId) || 0, // BE sẽ override nếu role là thu_ngan
-        danhSachSanPham: cart.map((x) => ({
+      const duLieuThanhToan = {
+        id_nhan_vien: Number(nvId) || 0,
+        tien_khach_dua:
+          modalThanhToan.phuongThuc === "cash" ? Number(tienMat) : tongTien,
+
+        danhSachSanPham: gioHang.map((x) => ({
           id_san_pham: x.id,
           so_luong: x.so_luong,
           don_gia: x.don_gia,
         })),
       };
-      const res = await api.post("/hoadonban/tao", body);
-      const invoice = res.data; // include nhan_vien + chi_tiet_hoa_don_ban[{san_pham}]
 
-      // Hiện hóa đơn (không in)
-      setSuccessModal({
+      const res = await api.post("/hoadonban/tao", duLieuThanhToan);
+      const hoaDon = res.data;
+
+      // Đóng modal thanh toán
+      setModalThanhToan({ open: false, phuongThuc: "cash" });
+
+      // Hiện hóa đơn thành công
+      setModalThanhCong({
         open: true,
-        invoice,
-        cash: Number(cash),
-        change: Number(change),
+        hoaDon: {
+          ...hoaDon,
+          phuong_thuc_thanh_toan: modalThanhToan.phuongThuc,
+        },
+        tienMat:
+          modalThanhToan.phuongThuc === "cash" ? Number(tienMat) : tongTien,
+        tienThoi: modalThanhToan.phuongThuc === "cash" ? Number(tienThoi) : 0,
       });
 
       // Reset giỏ
-      setCart([]);
-      setCash(0);
+      setGioHang([]);
+      setTienMat(0);
+      setLoiThanhToan("");
     } catch (e) {
       message.error(e.response?.data?.error || "Tạo hoá đơn thất bại");
     }
   };
 
-  const logout = () => {
+  const dangXuat = () => {
     localStorage.clear();
     navigate("/login");
   };
+  const handleTienMatChange = (e) => {
+    const value = Number(e.target.value.replace(/[^0-9]/g, "") || 0);
+    setTienMat(value);
 
+    // Kiểm tra và cập nhật lỗi ngay lập tức
+    if (modalThanhToan.phuongThuc === "cash") {
+      if (value < tongTien) {
+        const thieuTien = tongTien - value;
+        setLoiThanhToan(
+          `Tiền khách đưa không đủ! Cần thêm ${new Intl.NumberFormat(
+            "vi-VN"
+          ).format(thieuTien)}₫`
+        );
+      } else {
+        setLoiThanhToan("");
+      }
+    }
+  };
   return (
     <div
       style={{
-        display: "grid",
-        gridTemplateColumns: "minmax(0,1.1fr) minmax(0,1fr)", // ✅ tránh tràn ngang
-        gap: 16,
-        overflowX: "hidden", // ✅ chặn cuộn ngang vô hạn
+        minHeight: "100vh",
+        backgroundColor: "#f0f2f5",
+        padding: "20px",
       }}
     >
-      {/* CỘT TRÁI: Sản phẩm + nút Đơn hôm nay */}
-      <Card
-        title={
-          <Space align="center" style={{ width: "100%" }}>
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Tìm theo tên / mã SP (gõ không dấu được)"
-              allowClear
-              style={{ maxWidth: 360 }}
-            />
-            <Text type="secondary">
-              Tìm thấy: <b>{filtered.length}</b>/<b>{products.length}</b> SP
-            </Text>
-          </Space>
-        }
+      <div
+        style={{
+          backgroundColor: "white",
+          borderRadius: "8px",
+          padding: "24px",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+        }}
       >
-        <Table
-          tableLayout="fixed" // ✅ bảng cố định, không đẩy rộng ngoài khung
-          rowKey="id"
-          size="small"
-          dataSource={filtered}
-          columns={[
-            { title: "Mã", dataIndex: "ma_san_pham", width: 120 },
-            { title: "Tên", dataIndex: "ten_san_pham", ellipsis: true }, // ✅ tên dài sẽ …, không kéo rộng
-            {
-              title: "Giá",
-              dataIndex: "gia_ban",
-              render: (v) => Number(v).toLocaleString(),
-              align: "right",
-              width: 120,
-            },
-            {
-              title: "",
-              render: (_, sp) => (
-                <Button onClick={() => addToCart(sp)}>Chọn</Button>
-              ),
-              width: 80,
-            },
-          ]}
-          pagination={false} // ✅ không phân trang
-          scroll={{ y: 420, x: "max-content" }} // ✅ cuộn dọc ổn định
-          style={{ width: "100%" }}
-        />
-
-        {/* Nút Đơn hôm nay ở dưới danh sách sản phẩm */}
-        <div style={{ marginTop: 12, textAlign: "right" }}>
-          <Button type="default" onClick={() => navigate("/pos/orders")}>
-            Đơn hôm nay
-          </Button>
-        </div>
-      </Card>
-
-      {/* CỘT PHẢI: Giỏ hàng */}
-      <Card
-        title={
-          <Space>
-            <UserOutlined />
-            <b>{hoTen}</b>
-          </Space>
-        }
-        extra={
-          <Button icon={<LogoutOutlined />} onClick={logout}>
-            Đăng xuất
-          </Button>
-        }
-      >
-        <Table
-          tableLayout="fixed"
-          rowKey="id"
-          size="small"
-          dataSource={cart}
-          columns={[
-            { title: "Sản phẩm", dataIndex: "ten", ellipsis: true },
-            {
-              title: "SL",
-              render: (_, x) => (
-                <InputNumber
-                  min={1}
-                  value={x.so_luong}
-                  onChange={(v) => updateQty(x.id, v)}
-                />
-              ),
-              width: 120,
-              align: "right",
-            },
-            {
-              title: "Đơn giá",
-              dataIndex: "don_gia",
-              render: (v) => Number(v).toLocaleString(),
-              width: 120,
-              align: "right",
-            },
-            {
-              title: "Thành tiền",
-              render: (_, x) => (x.so_luong * x.don_gia).toLocaleString(),
-              width: 140,
-              align: "right",
-            },
-            {
-              title: "",
-              render: (_, x) => (
-                <Button danger onClick={() => removeItem(x.id)}>
-                  Xoá
-                </Button>
-              ),
-              width: 80,
-            },
-          ]}
-          pagination={false}
-        />
-
-        <div style={{ marginTop: 12, textAlign: "right" }}>
-          <div>
-            <b>Tổng:</b> {total.toLocaleString()} đ
-          </div>
-
-          <div style={{ marginTop: 8 }}>
-            Tiền khách đưa:{" "}
-            <InputNumber value={cash} onChange={setCash} min={0} step={10000} />
-          </div>
-
-          {/* Nút tiền nhanh: âm */}
-          <div
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 360px",
+            gap: 24,
+            maxWidth: "1400px",
+            margin: "0 auto",
+            boxSizing: "border-box",
+          }}
+        >
+          {/* CỘT TRÁI: Sản phẩm */}
+          <Card
             style={{
-              marginTop: 8,
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 8,
-              justifyContent: "flex-end",
+              borderRadius: "8px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              border: "1px solid #d9d9d9",
             }}
+            bodyStyle={{ padding: "24px" }}
+            title={
+              <div
+                style={{
+                  margin: "0 0 16px 0",
+                  padding: "10px 12px",
+                  borderRadius: "6px",
+                  color: "white",
+                  boxSizing: "border-box",
+                  width: "100%",
+                }}
+              >
+                <Space align="center" style={{ width: "100%" }}>
+                  <SearchOutlined
+                    style={{ fontSize: "20px", flex: "0 0 28px" }}
+                  />
+                  <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+                    <Input
+                      value={tuKhoa}
+                      onChange={(e) => setTuKhoa(e.target.value)}
+                      placeholder="🔍 Tìm sản phẩm theo tên hoặc mã..."
+                      allowClear
+                      size="large"
+                      style={{
+                        width: "100%",
+                        borderRadius: "6px",
+                        backgroundColor: "white",
+                        minWidth: 0,
+                      }}
+                    />
+                  </div>
+                  <Badge
+                    count={danhSachDaLoc.length}
+                    style={{ backgroundColor: "#52c41a" }}
+                    showZero
+                  >
+                    <Text style={{ color: "#52c41a", marginLeft: 8 }}>
+                      Sản phẩm
+                    </Text>
+                  </Badge>
+                </Space>
+              </div>
+            }
           >
-            {minusSteps.map((m) => (
-              <Button key={m} onClick={() => addMoney(m)}>
-                -{Math.abs(m).toLocaleString()}
-              </Button>
-            ))}
-          </div>
-
-          {/* Nút tiền nhanh: dương */}
-          <div
-            style={{
-              marginTop: 8,
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 8,
-              justifyContent: "flex-end",
-            }}
-          >
-            {plusSteps.map((m) => (
-              <Button key={m} onClick={() => addMoney(m)}>
-                +{m.toLocaleString()}
-              </Button>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 8 }}>
-            <b>Tiền thối:</b> {change.toLocaleString()} đ
-          </div>
-          <Button type="primary" style={{ marginTop: 12 }} onClick={checkout}>
-            THANH TOÁN
-          </Button>
-        </div>
-      </Card>
-
-      {/* MODAL HÓA ĐƠN (chỉ hiển thị thông tin, không có nút in) */}
-      <Modal
-        title="Hóa đơn"
-        open={successModal.open}
-        onCancel={() =>
-          setSuccessModal({ open: false, invoice: null, cash: 0, change: 0 })
-        }
-        footer={[
-          <Button
-            key="orders"
-            onClick={() => {
-              setSuccessModal({
-                open: false,
-                invoice: null,
-                cash: 0,
-                change: 0,
-              });
-              navigate("/pos/orders");
-            }}
-          >
-            Xem Đơn hôm nay
-          </Button>,
-        ]}
-        width={720}
-      >
-        {successModal.invoice && (
-          <>
-            <p>
-              <b>Mã HĐ:</b> #{successModal.invoice.id}
-            </p>
-            <p>
-              <b>Thu ngân:</b> {successModal.invoice.nhan_vien?.ho_ten || hoTen}
-            </p>
-            <p>
-              <b>Ngày:</b>{" "}
-              {new Date(successModal.invoice.ngay_ban).toLocaleString()}
-            </p>
-
-            {/* BẢNG SẢN PHẨM ĐÃ MUA */}
             <Table
               tableLayout="fixed"
-              rowKey={(r) => `${r.id}-${r.id_san_pham}`}
-              dataSource={successModal.invoice.chi_tiet_hoa_don_ban || []}
+              rowKey="id"
+              size="middle"
+              dataSource={danhSachDaLoc}
+              columns={[
+                {
+                  title: "Mã SP",
+                  dataIndex: "ma_san_pham",
+                  width: 120,
+                  render: (text) => (
+                    <Text
+                      code
+                      style={{
+                        backgroundColor: "#f0f0f0",
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      {text}
+                    </Text>
+                  ),
+                },
+                {
+                  title: "Tên sản phẩm",
+                  dataIndex: "ten_san_pham",
+                  ellipsis: true,
+                  render: (text) => (
+                    <Text strong style={{ color: "#1890ff" }}>
+                      {text}
+                    </Text>
+                  ),
+                },
+                {
+                  title: "Giá bán",
+                  dataIndex: "gia_ban",
+                  render: (v) => (
+                    <Text
+                      style={{
+                        color: "#f5222d",
+                        fontWeight: "600",
+                        fontSize: "14px",
+                      }}
+                    >
+                      {Number(v).toLocaleString()}₫
+                    </Text>
+                  ),
+                  align: "right",
+                  width: 120,
+                },
+                {
+                  title: "",
+                  render: (_, sp) => (
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      onClick={() => themVaoGio(sp)}
+                      style={{
+                        borderRadius: "8px",
+                        background:
+                          "linear-gradient(45deg, #36d1dc 0%, #5b86e5 100%)",
+                        border: "none",
+                        fontWeight: "500",
+                      }}
+                    >
+                      Thêm
+                    </Button>
+                  ),
+                  width: 90,
+                },
+              ]}
               pagination={false}
-              size="small"
+              scroll={{ y: 420, x: "100%" }}
+              style={{
+                backgroundColor: "#fafafa",
+                borderRadius: "12px",
+                overflow: "hidden",
+              }}
+            />
+
+            <div style={{ marginTop: 20, textAlign: "right" }}>
+              <Button
+                type="default"
+                icon={<FileTextOutlined />}
+                onClick={() => navigate("/pos/orders")}
+                size="large"
+                style={{
+                  borderRadius: "10px",
+                  height: "48px",
+                  fontWeight: "500",
+                  background:
+                    "linear-gradient(45deg, #ffecd2 0%, #fcb69f 100%)",
+                  border: "none",
+                  color: "#8b4513",
+                }}
+              >
+                📋 Đơn hôm nay
+              </Button>
+            </div>
+          </Card>
+
+          {/* CỘT PHẢI: Giỏ hàng */}
+          <Card
+            style={{
+              borderRadius: "8px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              border: "1px solid #d9d9d9",
+              width: "500px",
+            }}
+            title={
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  width: "100%",
+                  gap: 8,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div
+                    style={{
+                      background: "#f6ffed",
+                      color: "#389e0d",
+                      padding: "6px 10px",
+                      borderRadius: 20,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <UserOutlined />
+                    <span style={{ fontWeight: 600 }}>{hoTen}</span>
+                  </div>
+                  <Badge
+                    count={gioHang.length}
+                    style={{ backgroundColor: "#f5222d" }}
+                    showZero
+                  >
+                    <ShoppingCartOutlined style={{ fontSize: 18 }} />
+                  </Badge>
+                </div>
+
+                <Button
+                  icon={<LogoutOutlined />}
+                  onClick={dangXuat}
+                  style={{ borderRadius: 6, border: "1px solid #d9d9d9" }}
+                >
+                  Đăng xuất
+                </Button>
+              </div>
+            }
+          >
+            <Table
+              tableLayout="fixed"
+              rowKey="id"
+              size="middle"
+              dataSource={gioHang}
               columns={[
                 {
                   title: "Sản phẩm",
-                  dataIndex: ["san_pham", "ten_san_pham"],
+                  dataIndex: "ten",
                   ellipsis: true,
+                  render: (text) => (
+                    <Text strong style={{ color: "#722ed1" }}>
+                      {text}
+                    </Text>
+                  ),
                 },
                 {
-                  title: "SL",
-                  dataIndex: "so_luong",
-                  align: "right",
-                  width: 80,
+                  title: "Số lượng",
+                  render: (_, x) => (
+                    <InputNumber
+                      min={1}
+                      value={x.so_luong}
+                      onChange={(v) => capNhatSoLuong(x.id, v)}
+                      style={{
+                        borderRadius: "6px",
+                        width: "100%",
+                      }}
+                    />
+                  ),
+                  width: 100,
+                  align: "center",
                 },
                 {
                   title: "Đơn giá",
                   dataIndex: "don_gia",
+                  render: (v) => (
+                    <Text style={{ color: "#fa8c16", fontWeight: "500" }}>
+                      {Number(v).toLocaleString()}₫
+                    </Text>
+                  ),
+                  width: 100,
                   align: "right",
-                  width: 120,
-                  render: (v) => Number(v).toLocaleString(),
                 },
                 {
                   title: "Thành tiền",
+                  render: (_, x) => (
+                    <Text
+                      style={{
+                        color: "#52c41a",
+                        fontWeight: "600",
+                        fontSize: "15px",
+                      }}
+                    >
+                      {(x.so_luong * x.don_gia).toLocaleString()}₫
+                    </Text>
+                  ),
+                  width: 120,
                   align: "right",
-                  width: 140,
-                  render: (_, r) =>
-                    (Number(r.don_gia) * r.so_luong).toLocaleString(),
+                },
+                {
+                  title: "",
+                  render: (_, x) => (
+                    <Button
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => xoaKhoiGio(x.id)}
+                      style={{
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                      }}
+                    >
+                      Xóa
+                    </Button>
+                  ),
+                  width: 70,
                 },
               ]}
+              pagination={false}
+              style={{
+                backgroundColor: "#fafafa",
+                borderRadius: "12px",
+                overflow: "hidden",
+              }}
             />
 
-            <div style={{ marginTop: 10, textAlign: "right" }}>
-              <div>
-                <b>Tổng tiền:</b>{" "}
-                {Number(successModal.invoice.tong_tien).toLocaleString()} đ
+            <Divider style={{ margin: "20px 0" }} />
+
+            <div
+              style={{
+                background: "#f5f5f5",
+                padding: "20px",
+                borderRadius: "8px",
+                border: "1px solid #d9d9d9",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "20px",
+                  fontWeight: "700",
+                  marginBottom: "16px",
+                  textAlign: "center",
+                  color: "#1890ff",
+                }}
+              >
+                <DollarOutlined style={{ marginRight: "8px" }} />
+                Tổng: {tongTien.toLocaleString()}₫
               </div>
-              <div>
-                <b>Tiền khách đưa:</b>{" "}
-                {Number(successModal.cash).toLocaleString()} đ
-              </div>
-              <div>
-                <b>Tiền thối:</b> {Number(successModal.change).toLocaleString()}{" "}
-                đ
-              </div>
+
+              <Space
+                direction="vertical"
+                style={{ width: "100%" }}
+                size="middle"
+              >
+                <div>
+                  <Text
+                    style={{
+                      color: "#666",
+                      fontSize: "16px",
+                      fontWeight: "500",
+                    }}
+                  >
+                    💰 Tiền khách đưa:
+                  </Text>
+                  <InputNumber
+                    value={tienMat}
+                    onChange={setTienMat}
+                    min={0}
+                    step={10000}
+                    size="large"
+                    style={{
+                      width: "100%",
+                      marginTop: "8px",
+                      borderRadius: "8px",
+                    }}
+                    formatter={(value) =>
+                      `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                    }
+                    parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+                  />
+                  {/* THÊM ĐOẠN NÀY NGAY DƯỚI INPUT TRÊN */}
+                  {/* {loiThanhToan && modalThanhToan.phuongThuc === "cash" && (
+                    <div
+                      style={{
+                        color: "red",
+                        backgroundColor: "#fff2f0",
+                        border: "1px solid #ffccc7",
+                        padding: "8px 12px",
+                        borderRadius: "4px",
+                        marginBottom: "10px",
+                        fontSize: "14px",
+                      }}
+                    >
+                      ⚠️ {loiThanhToan}
+                    </div>
+                  )} */}
+
+                  {/* Phần hiển thị tiền thối sẽ ở dưới */}
+                  {/* <Text>
+                    Tiền thối: {new Intl.NumberFormat("vi-VN").format(tienThoi)}
+                    ₫
+                  </Text> */}
+                </div>
+
+                {/* Nút tiền nhanh: trừ */}
+                <div>
+                  <Text
+                    style={{
+                      color: "#666",
+                      fontSize: "14px",
+                      marginBottom: "8px",
+                      display: "block",
+                    }}
+                  >
+                    Trừ nhanh:
+                  </Text>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {cacBuocTru.map((m) => (
+                      <Button
+                        key={m}
+                        onClick={() => themTien(m)}
+                        icon={<MinusOutlined />}
+                        style={{
+                          borderRadius: "6px",
+                          backgroundColor: "#ff4d4f",
+                          border: "none",
+                          color: "white",
+                          fontSize: "12px",
+                        }}
+                      >
+                        {Math.abs(m).toLocaleString()}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Nút tiền nhanh: cộng */}
+                <div>
+                  <Text
+                    style={{
+                      color: "#666",
+                      fontSize: "14px",
+                      marginBottom: "8px",
+                      display: "block",
+                    }}
+                  >
+                    Cộng nhanh:
+                  </Text>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {cacBuocCong.map((m) => (
+                      <Button
+                        key={m}
+                        onClick={() => themTien(m)}
+                        icon={<PlusOutlined />}
+                        style={{
+                          borderRadius: "6px",
+                          backgroundColor: "#52c41a",
+                          border: "none",
+                          color: "white",
+                          fontSize: "12px",
+                        }}
+                      >
+                        {m.toLocaleString()}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: "600",
+                    textAlign: "center",
+                    padding: "12px",
+                    backgroundColor: "#f0f0f0",
+                    borderRadius: "6px",
+                    border: "1px solid #d9d9d9",
+                    color: "#666",
+                  }}
+                >
+                  💸 Tiền thối: {tienThoi.toLocaleString()}₫
+                </div>
+
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<CheckCircleOutlined />}
+                  onClick={xuLyThanhToan}
+                  style={{
+                    width: "100%",
+                    height: "48px",
+                    fontSize: "16px",
+                    fontWeight: "600",
+                    borderRadius: "6px",
+                    backgroundColor: "#1890ff",
+                    border: "none",
+                  }}
+                >
+                  🎯 THANH TOÁN
+                </Button>
+              </Space>
             </div>
-          </>
+          </Card>
+        </div>
+      </div>
+
+      {/* MODAL CHỌN PHƯƠNG THỨC THANH TOÁN */}
+      <Modal
+        title={
+          <div
+            style={{
+              background: "linear-gradient(45deg, #1890ff 0%, #36cfc9 100%)",
+              margin: "-24px -24px 24px -24px",
+              padding: "20px 24px",
+              color: "white",
+              fontSize: "18px",
+              fontWeight: "600",
+            }}
+          >
+            <DollarOutlined style={{ marginRight: "12px", fontSize: "24px" }} />
+            💳 Chọn phương thức thanh toán
+          </div>
+        }
+        open={modalThanhToan.open}
+        onCancel={() => {
+          setModalThanhToan({ open: false, phuongThuc: "cash" });
+          setLoiThanhToan(""); // THÊM DÒNG NÀY
+        }}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() =>
+              setModalThanhToan({ open: false, phuongThuc: "cash" })
+            }
+            style={{ borderRadius: "6px" }}
+          >
+            Hủy
+          </Button>,
+          // Chỉ hiển thị nút khi đủ tiền HOẶC không phải thanh toán tiền mặt
+          (modalThanhToan.phuongThuc !== "cash" ||
+            Number(tienMat) >= tongTien) && (
+            <Button
+              key="confirm"
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              onClick={thucHienThanhToan}
+              // disabled={
+              //   modalThanhToan.phuongThuc === "cash" && Number(tienMat) < tongTien
+              // }
+              style={{
+                borderRadius: "6px",
+                background: "linear-gradient(45deg, #52c41a 0%, #73d13d 100%)",
+                border: "none",
+                fontWeight: "500",
+              }}
+            >
+              Xác nhận thanh toán
+            </Button>
+          ),
+        ].filter(Boolean)}
+        width={700}
+        style={{ top: 50 }}
+        bodyStyle={{ padding: "24px" }}
+      >
+        <div
+          style={{
+            background: "#f5f5f5",
+            padding: "20px",
+            borderRadius: "8px",
+            marginBottom: "20px",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "18px",
+              fontWeight: "600",
+              textAlign: "center",
+              color: "#1890ff",
+              marginBottom: "8px",
+            }}
+          >
+            💰 Tổng tiền thanh toán: {tongTien.toLocaleString()}₫
+          </div>
+        </div>
+
+        <Radio.Group
+          value={modalThanhToan.phuongThuc}
+          onChange={(e) => {
+            setModalThanhToan({
+              ...modalThanhToan,
+              phuongThuc: e.target.value,
+            });
+            if (e.target.value === "installment") {
+              tinhTraGop(6); // Mặc định 6 tháng
+            }
+          }}
+          style={{ width: "100%" }}
+        >
+          <Space direction="vertical" size="large" style={{ width: "100%" }}>
+            {/* Thanh toán tiền mặt */}
+            <Card
+              hoverable
+              style={{
+                border:
+                  modalThanhToan.phuongThuc === "cash"
+                    ? "2px solid #1890ff"
+                    : "1px solid #d9d9d9",
+                borderRadius: "8px",
+              }}
+            >
+              <Radio
+                value="cash"
+                style={{ fontSize: "16px", fontWeight: "500" }}
+              >
+                <Space align="center">
+                  <DollarOutlined
+                    style={{ fontSize: "20px", color: "#52c41a" }}
+                  />
+                  💵 Thanh toán tiền mặt
+                </Space>
+              </Radio>
+              {modalThanhToan.phuongThuc === "cash" && (
+                <div style={{ marginTop: "16px", marginLeft: "24px" }}>
+                  <div style={{ marginBottom: "12px" }}>
+                    <span style={{ color: "#666", fontWeight: "500" }}>
+                      Tiền khách đưa:
+                    </span>
+                    <InputNumber
+                      value={tienMat}
+                      readOnly={true}
+                      onChange={(e) => {
+                        const value = Number(
+                          e.target.value.replace(/[^0-9]/g, "") || 0
+                        );
+                        setTienMat(value);
+                        // Tự động xóa lỗi khi đủ tiền
+                        if (value >= tongTien) {
+                          setLoiThanhToan("");
+                        }
+                      }}
+                      min={0}
+                      step={10000}
+                      size="large"
+                      style={{
+                        width: "100%",
+                        marginTop: "8px",
+                        borderRadius: "6px",
+                      }}
+                      formatter={(value) =>
+                        `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                      }
+                      parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+                    />
+                    {loiThanhToan && (
+                      <div
+                        style={{
+                          color: "#ff4d4f",
+                          backgroundColor: "#fff2f0",
+                          border: "1px solid #ffccc7",
+                          padding: "8px 12px",
+                          borderRadius: "4px",
+                          marginTop: "8px",
+                          fontSize: "14px",
+                        }}
+                      >
+                        ⚠️ {loiThanhToan}
+                      </div>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      padding: 8,
+                      backgroundColor: tienThoi > 0 ? "#f6ffed" : "#fff1f0",
+                      border: `1px solid ${
+                        tienThoi > 0 ? "#b7eb8f" : "#ffccc7"
+                      }`,
+                      borderRadius: 4,
+                      marginTop: 8,
+                    }}
+                  >
+                    <Text
+                      style={{ color: tienThoi > 0 ? "#52c41a" : "#ff4d4f" }}
+                    >
+                      💸 Tiền thối:
+                      {new Intl.NumberFormat("vi-VN").format(tienThoi)}₫
+                    </Text>
+                  </div>
+                </div>
+              )}
+            </Card>
+
+            {/* Thanh toán thẻ */}
+            <Card
+              hoverable
+              style={{
+                border:
+                  modalThanhToan.phuongThuc === "card"
+                    ? "2px solid #1890ff"
+                    : "1px solid #d9d9d9",
+                borderRadius: "8px",
+              }}
+            >
+              <Radio
+                value="card"
+                style={{ fontSize: "16px", fontWeight: "500" }}
+              >
+                <Space align="center">
+                  <CreditCardOutlined
+                    style={{ fontSize: "20px", color: "#722ed1" }}
+                  />
+                  💳 Thanh toán thẻ (Visa/MasterCard)
+                </Space>
+              </Radio>
+              {modalThanhToan.phuongThuc === "card" && (
+                <div style={{ marginTop: "16px", marginLeft: "24px" }}>
+                  <div
+                    style={{
+                      textAlign: "center",
+                      padding: "16px",
+                      backgroundColor: "#f0f0f0",
+                      borderRadius: "6px",
+                      border: "2px dashed #722ed1",
+                    }}
+                  >
+                    <CreditCardOutlined
+                      style={{
+                        fontSize: "48px",
+                        color: "#722ed1",
+                        marginBottom: "8px",
+                      }}
+                    />
+                    <div style={{ color: "#722ed1", fontWeight: "500" }}>
+                      Vui lòng quẹt thẻ hoặc chạm thẻ
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#666",
+                        marginTop: "4px",
+                      }}
+                    >
+                      Hỗ trợ Visa, MasterCard, JCB
+                    </div>
+                  </div>
+                </div>
+              )}
+            </Card>
+
+            {/* Chuyển khoản/QR */}
+            <Card
+              hoverable
+              style={{
+                border:
+                  modalThanhToan.phuongThuc === "transfer"
+                    ? "2px solid #1890ff"
+                    : "1px solid #d9d9d9",
+                borderRadius: "8px",
+              }}
+            >
+              <Radio
+                value="transfer"
+                style={{ fontSize: "16px", fontWeight: "500" }}
+              >
+                <Space align="center">
+                  <QrcodeOutlined
+                    style={{ fontSize: "20px", color: "#fa8c16" }}
+                  />
+                  📱 Chuyển khoản/QR Code
+                </Space>
+              </Radio>
+              {modalThanhToan.phuongThuc === "transfer" && (
+                <div style={{ marginTop: "16px", marginLeft: "24px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "20px",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div style={{ marginBottom: "12px" }}>
+                        <BankOutlined
+                          style={{ color: "#fa8c16", marginRight: "8px" }}
+                        />
+                        <strong>Thông tin chuyển khoản:</strong>
+                      </div>
+                      <div
+                        style={{
+                          backgroundColor: "#fff7e6",
+                          padding: "12px",
+                          borderRadius: "6px",
+                          border: "1px solid #ffd591",
+                        }}
+                      >
+                        <div>
+                          <strong>Ngân hàng:</strong> Vietcombank
+                        </div>
+                        <div>
+                          <strong>STK:</strong> 1234567890
+                        </div>
+                        <div>
+                          <strong>Chủ TK:</strong> CUAHANG ABC
+                        </div>
+                        <div>
+                          <strong>Số tiền:</strong> {tongTien.toLocaleString()}₫
+                        </div>
+                        <div>
+                          <strong>Nội dung:</strong> Thanh toan HD #{Date.now()}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ marginBottom: "8px", fontWeight: "500" }}>
+                        Quét mã QR:
+                      </div>
+                      <QRCode
+                        value={`Chuyen khoan ${tongTien}VND cho CUAHANG ABC`}
+                        size={120}
+                        style={{
+                          border: "4px solid #fa8c16",
+                          borderRadius: "8px",
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </Card>
+
+            {/* Thanh toán trả góp */}
+            <Card
+              hoverable
+              style={{
+                border:
+                  modalThanhToan.phuongThuc === "installment"
+                    ? "2px solid #1890ff"
+                    : "1px solid #d9d9d9",
+                borderRadius: "8px",
+              }}
+            >
+              <Radio
+                value="installment"
+                style={{ fontSize: "16px", fontWeight: "500" }}
+              >
+                <Space align="center">
+                  <ScheduleOutlined
+                    style={{ fontSize: "20px", color: "#13c2c2" }}
+                  />
+                  📅 Thanh toán trả góp
+                </Space>
+              </Radio>
+              {modalThanhToan.phuongThuc === "installment" && (
+                <div style={{ marginTop: "16px", marginLeft: "24px" }}>
+                  <div style={{ marginBottom: "16px" }}>
+                    <span
+                      style={{
+                        color: "#666",
+                        fontWeight: "500",
+                        marginBottom: "8px",
+                        display: "block",
+                      }}
+                    >
+                      Chọn kỳ hạn trả góp:
+                    </span>
+                    <Radio.Group
+                      value={keHoachTraGop.soThang}
+                      onChange={(e) => tinhTraGop(e.target.value)}
+                      style={{ width: "100%" }}
+                    >
+                      <Space direction="vertical" style={{ width: "100%" }}>
+                        {[3, 6, 12, 24].map((months) => {
+                          const monthlyAmount = Math.ceil(tongTien / months);
+                          const totalWithInterest = monthlyAmount * months;
+                          const interestRate =
+                            months <= 6 ? 0 : months <= 12 ? 5 : 10;
+                          const finalTotal = Math.ceil(
+                            totalWithInterest * (1 + interestRate / 100)
+                          );
+                          const finalMonthly = Math.ceil(finalTotal / months);
+
+                          return (
+                            <Card
+                              key={months}
+                              size="small"
+                              style={{
+                                backgroundColor:
+                                  keHoachTraGop.soThang === months
+                                    ? "#e6f7ff"
+                                    : "#fafafa",
+                                border:
+                                  keHoachTraGop.soThang === months
+                                    ? "1px solid #1890ff"
+                                    : "1px solid #d9d9d9",
+                              }}
+                            >
+                              <Radio value={months}>
+                                <div>
+                                  <div
+                                    style={{
+                                      fontWeight: "600",
+                                      color: "#1890ff",
+                                    }}
+                                  >
+                                    {months} tháng -{" "}
+                                    {finalMonthly.toLocaleString()}₫/tháng
+                                  </div>
+                                  <div
+                                    style={{ fontSize: "12px", color: "#666" }}
+                                  >
+                                    Lãi suất: {interestRate}% | Tổng:{" "}
+                                    {finalTotal.toLocaleString()}₫
+                                  </div>
+                                </div>
+                              </Radio>
+                            </Card>
+                          );
+                        })}
+                      </Space>
+                    </Radio.Group>
+                  </div>
+
+                  <div
+                    style={{
+                      backgroundColor: "#f0f9ff",
+                      padding: "12px",
+                      borderRadius: "6px",
+                      border: "1px solid #91d5ff",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: "600",
+                        color: "#1890ff",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      📋 Thông tin trả góp:
+                    </div>
+                    <div style={{ fontSize: "14px" }}>
+                      • Số tiền gốc: {tongTien.toLocaleString()}₫
+                    </div>
+                    <div style={{ fontSize: "14px" }}>
+                      • Số tháng: {keHoachTraGop.soThang} tháng
+                    </div>
+                    <div style={{ fontSize: "14px" }}>
+                      • Số tiền/tháng:{" "}
+                      {keHoachTraGop.tienHangThang.toLocaleString()}₫
+                    </div>
+                  </div>
+                </div>
+              )}
+            </Card>
+          </Space>
+        </Radio.Group>
+      </Modal>
+
+      {/* MODAL HÓA ĐƠN hiện đại */}
+      <Modal
+        title={
+          <div
+            style={{
+              background: "#1890ff",
+              margin: "-24px -24px 24px -24px",
+              padding: "16px 24px",
+              color: "white",
+              fontSize: "18px",
+              fontWeight: "600",
+            }}
+          >
+            <CheckCircleOutlined
+              style={{ marginRight: "12px", fontSize: "24px" }}
+            />
+            🎉 Hóa đơn thành công!
+          </div>
+        }
+        open={modalThanhCong.open}
+        onCancel={() =>
+          setModalThanhCong({
+            open: false,
+            hoaDon: null,
+            tienMat: 0,
+            tienThoi: 0,
+          })
+        }
+        footer={[
+          <Button
+            key="orders"
+            type="primary"
+            size="large"
+            icon={<FileTextOutlined />}
+            onClick={() => {
+              setModalThanhCong({
+                open: false,
+                hoaDon: null,
+                tienMat: 0,
+                tienThoi: 0,
+              });
+              navigate("/pos/orders");
+            }}
+            style={{
+              borderRadius: "10px",
+              background: "linear-gradient(45deg, #36d1dc 0%, #5b86e5 100%)",
+              border: "none",
+              fontWeight: "500",
+            }}
+          >
+            📋 Xem đơn hôm nay
+          </Button>,
+        ]}
+        width={800}
+        style={{ top: 20 }}
+        bodyStyle={{ padding: "24px" }}
+      >
+        {modalThanhCong.hoaDon && (
+          <div
+            style={{
+              background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+              padding: "24px",
+              borderRadius: "12px",
+            }}
+          >
+            <Space direction="vertical" size="large" style={{ width: "100%" }}>
+              <div style={{ textAlign: "center" }}>
+                <Text
+                  style={{
+                    fontSize: "24px",
+                    fontWeight: "700",
+                    color: "#1890ff",
+                  }}
+                >
+                  HÓA ĐƠN BÁN HÀNG #{modalThanhCong.hoaDon?.id}
+                </Text>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "16px",
+                  backgroundColor: "white",
+                  padding: "16px",
+                  borderRadius: "8px",
+                }}
+              >
+                <div>
+                  <Text strong style={{ color: "#722ed1" }}>
+                    👤 Thu ngân:
+                  </Text>
+                  <br />
+                  <Text style={{ fontSize: "16px" }}>
+                    {modalThanhCong.hoaDon?.nhan_vien?.ho_ten || hoTen}
+                  </Text>
+                </div>
+                <div>
+                  <Text strong style={{ color: "#722ed1" }}>
+                    🕐 Thời gian:
+                  </Text>
+                  <br />
+                  <Text style={{ fontSize: "16px" }}>
+                    {new Date(modalThanhCong.hoaDon?.ngay_ban).toLocaleString()}
+                  </Text>
+                </div>
+              </div>
+
+              {/* Thông tin phương thức thanh toán */}
+              <div
+                style={{
+                  backgroundColor: "white",
+                  padding: "16px",
+                  borderRadius: "8px",
+                  border: "2px solid #1890ff",
+                }}
+              >
+                <Text strong style={{ color: "#1890ff", fontSize: "16px" }}>
+                  💳 Phương thức thanh toán:
+                </Text>
+                <div style={{ marginTop: "8px" }}>
+                  {modalThanhCong.hoaDon?.phuong_thuc_thanh_toan === "cash" && (
+                    <Space align="center">
+                      <DollarOutlined
+                        style={{ color: "#52c41a", fontSize: "18px" }}
+                      />
+                      <Text
+                        style={{
+                          fontSize: "16px",
+                          fontWeight: "600",
+                          color: "#52c41a",
+                        }}
+                      >
+                        💵 Tiền mặt
+                      </Text>
+                    </Space>
+                  )}
+                  {modalThanhCong.hoaDon?.phuong_thuc_thanh_toan === "card" && (
+                    <Space align="center">
+                      <CreditCardOutlined
+                        style={{ color: "#722ed1", fontSize: "18px" }}
+                      />
+                      <Text
+                        style={{
+                          fontSize: "16px",
+                          fontWeight: "600",
+                          color: "#722ed1",
+                        }}
+                      >
+                        💳 Thanh toán thẻ
+                      </Text>
+                    </Space>
+                  )}
+                  {modalThanhCong.hoaDon?.phuong_thuc_thanh_toan ===
+                    "transfer" && (
+                    <Space align="center">
+                      <QrcodeOutlined
+                        style={{ color: "#fa8c16", fontSize: "18px" }}
+                      />
+                      <Text
+                        style={{
+                          fontSize: "16px",
+                          fontWeight: "600",
+                          color: "#fa8c16",
+                        }}
+                      >
+                        📱 Chuyển khoản/QR
+                      </Text>
+                    </Space>
+                  )}
+                  {modalThanhCong.hoaDon?.phuong_thuc_thanh_toan ===
+                    "installment" && (
+                    <Space align="center">
+                      <ScheduleOutlined
+                        style={{ color: "#13c2c2", fontSize: "18px" }}
+                      />
+                      <Text
+                        style={{
+                          fontSize: "16px",
+                          fontWeight: "600",
+                          color: "#13c2c2",
+                        }}
+                      >
+                        📅 Trả góp ({keHoachTraGop.soThang} tháng)
+                      </Text>
+                    </Space>
+                  )}
+                </div>
+              </div>
+
+              <Table
+                tableLayout="fixed"
+                rowKey={(r) => `${r.id}-${r.id_san_pham}`}
+                dataSource={modalThanhCong.hoaDon?.chi_tiet_hoa_don_ban || []}
+                pagination={false}
+                size="middle"
+                style={{
+                  backgroundColor: "white",
+                  borderRadius: "8px",
+                  overflow: "hidden",
+                }}
+                columns={[
+                  {
+                    title: "Sản phẩm",
+                    dataIndex: ["san_pham", "ten_san_pham"],
+                    ellipsis: true,
+                    render: (text) => (
+                      <Text strong style={{ color: "#1890ff" }}>
+                        {text}
+                      </Text>
+                    ),
+                  },
+                  {
+                    title: "SL",
+                    dataIndex: "so_luong",
+                    align: "center",
+                    width: 80,
+                    render: (text) => (
+                      <Badge
+                        count={text}
+                        style={{ backgroundColor: "#52c41a" }}
+                      />
+                    ),
+                  },
+                  {
+                    title: "Đơn giá",
+                    dataIndex: "don_gia",
+                    align: "right",
+                    width: 120,
+                    render: (v) => (
+                      <Text style={{ color: "#fa8c16", fontWeight: "500" }}>
+                        {Number(v).toLocaleString()}₫
+                      </Text>
+                    ),
+                  },
+                  {
+                    title: "Thành tiền",
+                    align: "right",
+                    width: 140,
+                    render: (_, r) => (
+                      <Text
+                        style={{
+                          color: "#52c41a",
+                          fontWeight: "600",
+                          fontSize: "15px",
+                        }}
+                      >
+                        {(Number(r.don_gia) * r.so_luong).toLocaleString()}₫
+                      </Text>
+                    ),
+                  },
+                ]}
+              />
+
+              <div
+                style={{
+                  backgroundColor: "white",
+                  padding: "20px",
+                  borderRadius: "8px",
+                  textAlign: "right",
+                }}
+              >
+                <Space
+                  direction="vertical"
+                  size="middle"
+                  style={{ width: "100%" }}
+                >
+                  <div style={{ fontSize: "18px" }}>
+                    <Text strong style={{ color: "#1890ff" }}>
+                      💰 Tổng tiền:{" "}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: "20px",
+                        fontWeight: "700",
+                        color: "#f5222d",
+                      }}
+                    >
+                      {Number(
+                        modalThanhCong.hoaDon?.tong_tien
+                      ).toLocaleString()}
+                      ₫
+                    </Text>
+                  </div>
+
+                  {/* Hiển thị thông tin thanh toán theo phương thức */}
+                  {modalThanhCong.hoaDon?.phuong_thuc_thanh_toan === "cash" && (
+                    <>
+                      <div style={{ fontSize: "16px" }}>
+                        <Text strong style={{ color: "#52c41a" }}>
+                          💵 Tiền khách đưa:{" "}
+                        </Text>
+                        <Text style={{ fontWeight: "600" }}>
+                          {Number(modalThanhCong.tienMat).toLocaleString()}₫
+                        </Text>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "18px",
+                          padding: "12px",
+                          backgroundColor: "#f6ffed",
+                          borderRadius: "6px",
+                          border: "1px solid #b7eb8f",
+                        }}
+                      >
+                        <Text strong style={{ color: "#389e0d" }}>
+                          💸 Tiền thối:{" "}
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: "20px",
+                            fontWeight: "700",
+                            color: "#389e0d",
+                          }}
+                        >
+                          {Number(modalThanhCong.tienThoi).toLocaleString()}₫
+                        </Text>
+                      </div>
+                    </>
+                  )}
+
+                  {modalThanhCong.hoaDon?.phuong_thuc_thanh_toan === "card" && (
+                    <div
+                      style={{
+                        fontSize: "16px",
+                        padding: "12px",
+                        backgroundColor: "#f9f0ff",
+                        borderRadius: "6px",
+                        border: "1px solid #d3adf7",
+                      }}
+                    >
+                      <Text strong style={{ color: "#722ed1" }}>
+                        💳 Thanh toán thẻ thành công
+                      </Text>
+                      <br />
+                      <Text style={{ fontSize: "14px", color: "#666" }}>
+                        Giao dịch đã được xử lý an toàn
+                      </Text>
+                    </div>
+                  )}
+
+                  {modalThanhCong.hoaDon?.phuong_thuc_thanh_toan ===
+                    "transfer" && (
+                    <div
+                      style={{
+                        fontSize: "16px",
+                        padding: "12px",
+                        backgroundColor: "#fff7e6",
+                        borderRadius: "6px",
+                        border: "1px solid #ffd591",
+                      }}
+                    >
+                      <Text strong style={{ color: "#fa8c16" }}>
+                        📱 Chuyển khoản thành công
+                      </Text>
+                      <br />
+                      <Text style={{ fontSize: "14px", color: "#666" }}>
+                        Số tiền đã được chuyển vào tài khoản
+                      </Text>
+                    </div>
+                  )}
+
+                  {modalThanhCong.hoaDon?.phuong_thuc_thanh_toan ===
+                    "installment" && (
+                    <div
+                      style={{
+                        fontSize: "16px",
+                        padding: "12px",
+                        backgroundColor: "#e6fffb",
+                        borderRadius: "6px",
+                        border: "1px solid #87e8de",
+                      }}
+                    >
+                      <Text strong style={{ color: "#13c2c2" }}>
+                        📅 Trả góp đã được thiết lập
+                      </Text>
+                      <br />
+                      <Text style={{ fontSize: "14px", color: "#666" }}>
+                        Kỳ hạn: {keHoachTraGop.soThang} tháng -{" "}
+                        {keHoachTraGop.tienHangThang.toLocaleString()}₫/tháng
+                      </Text>
+                    </div>
+                  )}
+                </Space>
+              </div>
+            </Space>
+          </div>
         )}
       </Modal>
     </div>
