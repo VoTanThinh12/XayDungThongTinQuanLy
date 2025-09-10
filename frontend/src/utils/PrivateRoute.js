@@ -29,7 +29,7 @@ const PrivateRoute = ({ children, roles }) => {
   // Kiểm tra có đúng vai trò (quyền) để truy cập không
   if (roles && !roles.includes(userRole)) {
     // Nếu sai quyền, quay về trang an toàn (ví dụ: dashboard)
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   // ✅ BƯỚC 2: Nếu mọi thứ OK, hiển thị trang (`children`) bên trong MainLayout
