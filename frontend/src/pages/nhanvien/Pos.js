@@ -109,9 +109,11 @@ const Pos = () => {
     // Kiểm tra số lượng đã có trong giỏ
     const daTonTai = gioHang.find((x) => x.id === sanPham.id);
     const soLuongTrongGio = daTonTai ? daTonTai.so_luong : 0;
-    
+
     if (soLuongTrongGio >= sanPham.so_luong) {
-      message.error(`Không thể thêm. Chỉ còn ${sanPham.so_luong} sản phẩm trong kho!`);
+      message.error(
+        `Không thể thêm. Chỉ còn ${sanPham.so_luong} sản phẩm trong kho!`
+      );
       return;
     }
 
@@ -135,72 +137,74 @@ const Pos = () => {
     });
 
     // Tự động trừ số lượng trong danh sách sản phẩm
-    setDanhSachSanPham(prevList => 
-      prevList.map(sp => 
-        sp.id === sanPham.id 
-          ? { ...sp, so_luong: sp.so_luong - 1 }
-          : sp
+    setDanhSachSanPham((prevList) =>
+      prevList.map((sp) =>
+        sp.id === sanPham.id ? { ...sp, so_luong: sp.so_luong - 1 } : sp
       )
     );
 
     // Hiển thị cảnh báo nếu sản phẩm sắp hết (sau khi trừ)
     const soLuongConLai = sanPham.so_luong - 1;
     if (soLuongConLai <= 10 && soLuongConLai > 0) {
-      message.warning(`⚠️ Sản phẩm "${sanPham.ten_san_pham}" chỉ còn ${soLuongConLai} trong kho!`);
+      message.warning(
+        `⚠️ Sản phẩm "${sanPham.ten_san_pham}" chỉ còn ${soLuongConLai} trong kho!`
+      );
     }
   };
   const capNhatSoLuong = (id, soLuongMoi) => {
     // Tìm sản phẩm trong danh sách để kiểm tra số lượng kho
-    const sanPham = danhSachSanPham.find(sp => sp.id === id);
-    const itemTrongGio = gioHang.find(item => item.id === id);
-    
+    const sanPham = danhSachSanPham.find((sp) => sp.id === id);
+    const itemTrongGio = gioHang.find((item) => item.id === id);
+
     if (!sanPham || !itemTrongGio) return;
-    
+
     const soLuongCu = itemTrongGio.so_luong;
     const soLuongKhoHienTai = sanPham.so_luong;
     const soLuongKhoGoc = soLuongKhoHienTai + soLuongCu; // Số lượng kho ban đầu
-    
+
     if (soLuongMoi > soLuongKhoGoc) {
-      message.error(`Không thể đặt ${soLuongMoi}. Chỉ có ${soLuongKhoGoc} sản phẩm trong kho!`);
+      message.error(
+        `Không thể đặt ${soLuongMoi}. Chỉ có ${soLuongKhoGoc} sản phẩm trong kho!`
+      );
       return;
     }
-    
+
     // Cập nhật giỏ hàng
     setGioHang((truoc) =>
       truoc.map((x) => (x.id === id ? { ...x, so_luong: soLuongMoi || 1 } : x))
     );
-    
+
     // Cập nhật số lượng trong danh sách sản phẩm
     const chenhLech = soLuongMoi - soLuongCu;
-    setDanhSachSanPham(prevList => 
-      prevList.map(sp => 
-        sp.id === id 
-          ? { ...sp, so_luong: sp.so_luong - chenhLech }
-          : sp
+    setDanhSachSanPham((prevList) =>
+      prevList.map((sp) =>
+        sp.id === id ? { ...sp, so_luong: sp.so_luong - chenhLech } : sp
       )
     );
-    
+
     // Cảnh báo nếu sản phẩm sắp hết
     const soLuongConLai = soLuongKhoHienTai - chenhLech;
     if (soLuongConLai <= 10 && soLuongConLai > 0) {
-      message.warning(`⚠️ Sản phẩm "${sanPham.ten_san_pham}" chỉ còn ${soLuongConLai} trong kho!`);
+      message.warning(
+        `⚠️ Sản phẩm "${sanPham.ten_san_pham}" chỉ còn ${soLuongConLai} trong kho!`
+      );
     }
   };
   const xoaKhoiGio = (id) => {
-    const itemCanXoa = gioHang.find(item => item.id === id);
+    const itemCanXoa = gioHang.find((item) => item.id === id);
     if (!itemCanXoa) return;
-    
+
     // Hoàn lại số lượng cho kho
-    setDanhSachSanPham(prevList => 
-      prevList.map(sp => 
-        sp.id === id 
+    setDanhSachSanPham((prevList) =>
+      prevList.map((sp) =>
+        sp.id === id
           ? { ...sp, so_luong: sp.so_luong + itemCanXoa.so_luong }
           : sp
       )
     );
-    
+
     setGioHang((truoc) => truoc.filter((x) => x.id !== id));
-    message.success('Đã xóa sản phẩm khỏi giỏ hàng và hoàn lại kho');
+    message.success("Đã xóa sản phẩm khỏi giỏ hàng và hoàn lại kho");
   };
   const tongTien = useMemo(
     () => gioHang.reduce((tong, x) => tong + x.don_gia * x.so_luong, 0),
@@ -305,7 +309,7 @@ const Pos = () => {
       setGioHang([]);
       setTienMat(0);
       setLoiThanhToan("");
-      
+
       // Tải lại danh sách sản phẩm để cập nhật số lượng mới từ server
       layDanhSachSanPham();
     } catch (e) {
@@ -420,7 +424,7 @@ const Pos = () => {
                 {
                   title: "Mã SP",
                   dataIndex: "ma_san_pham",
-                  width: 120,
+                  width: 100,
                   render: (text) => (
                     <Text
                       code
@@ -447,15 +451,21 @@ const Pos = () => {
                 {
                   title: "Số lượng",
                   dataIndex: "so_luong",
+                  width: 70, // Thêm độ rộng cố định cho cột
+                  align: "center",
+
                   ellipsis: true,
                   render: (text) => (
-                    <Text strong style={{ 
-                      color: text <= 10 ? "#ff4d4f" : "#1890ff",
-                      backgroundColor: text <= 10 ? "#fff2f0" : "transparent",
-                      padding: text <= 10 ? "2px 6px" : "0",
-                      borderRadius: text <= 10 ? "4px" : "0",
-                      border: text <= 10 ? "1px solid #ffccc7" : "none"
-                    }}>
+                    <Text
+                      strong
+                      style={{
+                        color: text <= 10 ? "#ff4d4f" : "#1890ff",
+                        backgroundColor: text <= 10 ? "#fff2f0" : "transparent",
+                        padding: text <= 10 ? "2px 6px" : "0",
+                        borderRadius: text <= 10 ? "4px" : "0",
+                        border: text <= 10 ? "1px solid #ffccc7" : "none",
+                      }}
+                    >
                       {text <= 10 ? `⚠️ ${text}` : text}
                     </Text>
                   ),
@@ -480,11 +490,12 @@ const Pos = () => {
                 {
                   title: "",
                   render: (_, sp) => {
-                    const soLuongTrongGio = gioHang.find(x => x.id === sp.id)?.so_luong || 0;
+                    const soLuongTrongGio =
+                      gioHang.find((x) => x.id === sp.id)?.so_luong || 0;
                     const coTheThemNua = soLuongTrongGio < sp.so_luong;
                     const hetHang = sp.so_luong <= 0;
                     const sapHet = sp.so_luong <= 10 && sp.so_luong > 0;
-                    
+
                     return (
                       <Button
                         type="primary"
@@ -493,21 +504,25 @@ const Pos = () => {
                         disabled={hetHang || !coTheThemNua}
                         style={{
                           borderRadius: "8px",
-                          background: hetHang 
-                            ? "#ff4d4f" 
-                            : sapHet 
-                              ? "linear-gradient(45deg, #ff9c6e 0%, #ff6b6b 100%)"
-                              : "linear-gradient(45deg, #36d1dc 0%, #5b86e5 100%)",
+                          background: hetHang
+                            ? "#ff4d4f"
+                            : sapHet
+                            ? "linear-gradient(45deg, #ff9c6e 0%, #ff6b6b 100%)"
+                            : "linear-gradient(45deg, #36d1dc 0%, #5b86e5 100%)",
                           border: "none",
                           fontWeight: "500",
-                          opacity: (!coTheThemNua || hetHang) ? 0.6 : 1,
+                          opacity: !coTheThemNua || hetHang ? 0.6 : 1,
                         }}
                       >
-                        {hetHang ? "Hết hàng" : sapHet ? `⚠️ Thêm (${sp.so_luong})` : "Thêm"}
+                        {hetHang
+                          ? "Hết hàng"
+                          : sapHet
+                          ? `⚠️ Thêm (${sp.so_luong})`
+                          : "Thêm"}
                       </Button>
                     );
                   },
-                  width: 120,
+                  width: 160,
                 },
               ]}
               pagination={true}
@@ -1514,10 +1529,10 @@ const Pos = () => {
                     render: (text) => (
                       <Badge
                         count={text}
-                        style={{ 
+                        style={{
                           backgroundColor: text <= 10 ? "#ff4d4f" : "#52c41a",
                           color: "white",
-                          fontWeight: "bold"
+                          fontWeight: "bold",
                         }}
                       />
                     ),
