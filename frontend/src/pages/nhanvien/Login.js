@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Form, Input, Button, Card, message } from "antd";
 import { useNavigate } from "react-router-dom";
-import api from "../../utils/api";
+// import api from "../../utils/api"; // không dùng backend nữa
 import MainLayout from "../../components/MainLayout";
 
 const Login = () => {
@@ -10,25 +10,40 @@ const Login = () => {
 
   const onFinish = async (values) => {
     setLoading(true);
+
     try {
-      const res = await api.post("/auth/login", values);
-      const { token, nhanVien } = res.data;
+      // fake login demo
+      if (values.tai_khoan === "admin" && values.mat_khau === "admin") {
+        const fakeUser = {
+          token: "demo-token",
+          nhanVien: {
+            id: 1,
+            ho_ten: "Admin Demo",
+            tai_khoan: "admin",
+            vai_tro: "quan_ly",
+          },
+        };
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("role", nhanVien?.vai_tro || "");
-      localStorage.setItem("nvId", nhanVien?.id || "");
-      localStorage.setItem("ho_ten", nhanVien?.ho_ten || "");
-      localStorage.setItem("tai_khoan", nhanVien?.tai_khoan || "");
+        localStorage.setItem("token", fakeUser.token);
+        localStorage.setItem("role", fakeUser.nhanVien.vai_tro);
+        localStorage.setItem("nvId", fakeUser.nhanVien.id);
+        localStorage.setItem("ho_ten", fakeUser.nhanVien.ho_ten);
+        localStorage.setItem("tai_khoan", fakeUser.nhanVien.tai_khoan);
 
-      message.success("Đăng nhập thành công");
-      const role = (nhanVien?.vai_tro || "").toLowerCase();
-      navigate(role === "thu_ngan" ? "/pos" : "/dashboard");
+        message.success("Đăng nhập thành công");
+
+        const role = fakeUser.nhanVien.vai_tro.toLowerCase();
+        navigate(role === "thu_ngan" ? "/pos" : "/dashboard");
+      } else {
+        message.error("Sai tài khoản hoặc mật khẩu");
+      }
     } catch (err) {
-      message.error(err.response?.data?.error || "Đăng nhập thất bại");
+      message.error("Đăng nhập thất bại");
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <div
       style={{
@@ -47,12 +62,14 @@ const Login = () => {
           >
             <Input placeholder="Tài khoản" />
           </Form.Item>
+
           <Form.Item
             name="mat_khau"
             rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
           >
             <Input.Password placeholder="Mật khẩu" />
           </Form.Item>
+
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={loading} block>
               Đăng nhập
